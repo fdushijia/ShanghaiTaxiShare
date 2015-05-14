@@ -12,17 +12,21 @@
 
 using namespace std;
 
-#define ALL_NODES 435288      //å›¾ä¸­Nodeçš„æœ€å¤§å€¼
+#define ALL_NODES 435288      //Í¼ÖĞNodeµÄ×î´óÖµ
 
 
-#define MAX_DIST  1000000000  //åˆå§‹æœ€å¤§è·ç¦»
+#define MAX_DIST  1000000000  //³õÊ¼×î´ó¾àÀë
 #define MAX_PAIRS 400
+#define SPEED     40          // ³µËÙ 
+
+typedef float DistVector [435288];
 
 float minDist[ALL_NODES], antiMinDist[ALL_NODES];
 bool  visit[ALL_NODES];
 queue<int> q;
 vector<int> path[MAX_PAIRS];
 
+// Í¼ÖĞµÄ½Úµã 
 struct RoadNode {
 	int blockNum, blockOffset, borderNum, blockBorderNum;
 	float lat, lon;
@@ -31,13 +35,20 @@ struct RoadNode {
 	vector<float> neighbourBorderDistance;
 };
 
+// ÇëÇóµÄÊı¾İ½á¹¹ 
+struct QueryInfo {
+	int startTd, endId;
+	vector<float> distS, distT;
+	int latestTime;
+	int maxRatio;
+};
 struct NeighNode {
 	int id;
 	float dist;
 	NeighNode* next;
 };
-NeighNode* neighbour[ALL_NODES]; //æ­£å‘è¾¹
-NeighNode* fromNode[ALL_NODES];  //åå‘è¾¹
+NeighNode* neighbour[ALL_NODES]; //ÕıÏò±ß
+NeighNode* fromNode[ALL_NODES];  //·´Ïò±ß
 
 NeighNode *neighbourTail[ALL_NODES], *fromTail[ALL_NODES];
 RoadNode roadNodes[ALL_NODES];
@@ -71,7 +82,7 @@ void init() {
 		s = atoi(ss.c_str());
 		t = atoi(tt.c_str());
 
-		// å»ºæ­£å‘è¾¹
+		// ½¨ÕıÏò±ß
 		if (neighbour[s] == NULL) {
 			neighbour[s]       = (struct NeighNode *)malloc(sizeof(NeighNode));
 			neighbour[s]->id   = t;
@@ -87,7 +98,7 @@ void init() {
 			neighbourTail[s]       = p;
 		}
 
-		// å»ºåå‘è¾¹
+		// ½¨·´Ïò±ß
 		if (fromNode[t] == NULL) {
 			fromNode[t]       = (struct NeighNode*) malloc(sizeof(NeighNode));
 			fromNode[t]->id   = s;
@@ -154,7 +165,7 @@ void initAntiDist(int s) {
 }
 
 /**
- * å› ä¸ºè·¯ç½‘è½¬åŒ–æˆå›¾ä¹‹åæ˜¯ç¨€ç–å›¾ï¼Œè¿™é‡Œç”¨SPFAç®—æ³•æ±‚å•æºç‚¹æœ€çŸ­è·¯å¾„
+ * ÒòÎªÂ·Íø×ª»¯³ÉÍ¼Ö®ºóÊÇÏ¡ÊèÍ¼£¬ÕâÀïÓÃSPFAËã·¨Çóµ¥Ô´µã×î¶ÌÂ·¾¶
  */
 void SPFA(int s) {
 	initDist(s);
@@ -184,7 +195,7 @@ void SPFA(int s) {
         distTemp[s].push_back(minDist[j]);
 }
 
-// å•æºç‚¹åå‘æœ€çŸ­è·¯å¾„
+// µ¥Ô´µã·´Ïò×î¶ÌÂ·¾¶
 void antiSPFA(int s) {
 	initAntiDist(s);
 	q.push(s);
@@ -299,8 +310,8 @@ void testShare() {
 
 
 /*
- *ç”ŸæˆåŒèµ·ç‚¹æƒ…å†µä¸‹çš„æµ‹è¯•æ•°æ®ï¼Œèµ·ç‚¹åæ ‡ï¼š(31.1622,121.54)
- *æ•°æ®æ ¼å¼ï¼šç»ˆç‚¹Idï¼Œæ‰€èƒ½æ¥å—çš„çœé’±ç³»æ•° 
+ *Éú³ÉÍ¬ÆğµãÇé¿öÏÂµÄ²âÊÔÊı¾İ£¬Æğµã×ø±ê£º(31.1622,121.54)
+ *Êı¾İ¸ñÊ½£ºÖÕµãId£¬ËùÄÜ½ÓÊÜµÄÊ¡Ç®ÏµÊı 
  */
 void generateTestsForCase1(){
 	SPFA(31948);
@@ -331,8 +342,8 @@ void generateTestsForCase1(){
 }
 
 /*
- * ç”ŸæˆåŒç»ˆç‚¹æƒ…å†µä¸‹çš„æµ‹è¯•æ•°æ®ï¼Œç»ˆç‚¹åæ ‡ï¼šæµ¦ä¸œå›½é™…æœºåœº 
- * æ•°æ®æ ¼å¼ï¼šèµ·ç‚¹Idï¼Œæœ€æ™šå‡ºå‘æ—¶é—´ï¼Œæ‰€èƒ½æ¥å—çš„çœé’±ç³»æ•° 
+ * Éú³ÉÍ¬ÖÕµãÇé¿öÏÂµÄ²âÊÔÊı¾İ£¬ÖÕµã×ø±ê£ºÆÖ¶«¹ú¼Ê»ú³¡ 
+ * Êı¾İ¸ñÊ½£ºÆğµãId£¬×îÍí³ö·¢Ê±¼ä£¬ËùÄÜ½ÓÊÜµÄÊ¡Ç®ÏµÊı 
  */
 void generateTestsForCase2() {
 	antiSPFA(411445);
@@ -361,8 +372,8 @@ void generateTestsForCase2() {
 }
 
 /*
- * èµ·ç‚¹å’Œç»ˆç‚¹éƒ½ä¸ç›¸åŒçš„æƒ…å†µ
- * æ•°æ®æ ¼å¼ï¼šèµ·ç‚¹idï¼Œç»ˆç‚¹idï¼Œæœ€æ™šå‡ºå‘æ—¶é—´ï¼Œçœé’±æ¯”ä¾‹ 
+ * ÆğµãºÍÖÕµã¶¼²»ÏàÍ¬µÄÇé¿ö
+ * Êı¾İ¸ñÊ½£ºÆğµãid£¬ÖÕµãid£¬×îÍí³ö·¢Ê±¼ä£¬Ê¡Ç®±ÈÀı 
  */
 void generateTestsForCase3() {
 	ifstream fin("testcase.txt");
@@ -391,6 +402,36 @@ void generateTestsForCase3() {
 	
 }
 
+float getSaveRatio(float dist1, float dist2, float totDist) {
+	float saveAll = (dist1 + dist2 - totDist) * 0.8;
+	
+	return 1 - (0.8 * saveAll) / (dist1 + dist2);
+}
+
+float shareDistance(DistVector distS1, DistVector distT1, DistVector distS2, DistVector distT2, int s1, int t1, int s2, int t2, int lastTime1, int lastTime2) {
+	float ans = MAX_DIST;
+	//s1->s2->t1->t2
+	if (distS1[s2] + distS2[t1] + distT1[t2] < ans && distS1[s2] / SPEED < lastTime2) {
+		ans = distS1[s2] + distS2[t1] + distT1[t2];
+	}
+	//s1->s2->t2->t1
+	if (distS1[s2] + distS2[t2] + distT2[t1] < ans && distS1[s2] / SPEED < lastTime2) {
+		ans = distS1[s2] + distS2[t2] + distT2[t1];
+	}
+	//s2->s1->t1->t2
+	if (distS2[s1] + distS1[t1] + distT1[t2] < ans && distS2[s1] / SPEED < lastTime1) {
+		ans = distS2[s1] + distS1[t1] + distT1[t2];
+	}
+	//s2->s1->t2->t1
+	if (distS2[s1] + distS1[t2] + distT2[t1] < ans && distS2[s1] / SPEED < lastTime1) {
+		ans = distS2[s1] + distS1[t2] + distT2[t1];
+	}
+	
+	return ans;
+	
+}
+
+
 
 
 int main() {
@@ -401,15 +442,15 @@ int main() {
 
 	time(&rawtime); 
 	timeinfo = localtime(&rawtime); 
-	printf ("ç³»ç»Ÿæ—¶é—´æ˜¯: %s", asctime (timeinfo) ); 
+	printf ("ÏµÍ³Ê±¼äÊÇ: %s", asctime (timeinfo) ); 
 	
 	generateTestsForCase1();
-        generateTestsForCase2();
+    generateTestsForCase2();
 	generateTestsForCase3();
 
 	time(&rawtime); 
 	timeinfo = localtime(&rawtime); 
-	printf ("ç³»ç»Ÿæ—¶é—´æ˜¯: %s", asctime (timeinfo) );
+	printf ("ÏµÍ³Ê±¼äÊÇ: %s", asctime (timeinfo) );
 	
 	//recycle();
 
