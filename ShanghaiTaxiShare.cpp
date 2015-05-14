@@ -12,10 +12,10 @@
 
 using namespace std;
 
-#define ALL_NODES 435288      //Í¼ÖĞNodeµÄ×î´óÖµ
+#define ALL_NODES 435288      //å›¾ä¸­Nodeçš„æœ€å¤§å€¼
 
 
-#define MAX_DIST  1000000000  //³õÊ¼×î´ó¾àÀë
+#define MAX_DIST  1000000000  //åˆå§‹æœ€å¤§è·ç¦»
 #define MAX_PAIRS 400
 
 float minDist[ALL_NODES], antiMinDist[ALL_NODES];
@@ -36,8 +36,8 @@ struct NeighNode {
 	float dist;
 	NeighNode* next;
 };
-NeighNode* neighbour[ALL_NODES]; //ÕıÏò±ß
-NeighNode* fromNode[ALL_NODES];  //·´Ïò±ß
+NeighNode* neighbour[ALL_NODES]; //æ­£å‘è¾¹
+NeighNode* fromNode[ALL_NODES];  //åå‘è¾¹
 
 NeighNode *neighbourTail[ALL_NODES], *fromTail[ALL_NODES];
 RoadNode roadNodes[ALL_NODES];
@@ -71,7 +71,7 @@ void init() {
 		s = atoi(ss.c_str());
 		t = atoi(tt.c_str());
 
-		// ½¨ÕıÏò±ß
+		// å»ºæ­£å‘è¾¹
 		if (neighbour[s] == NULL) {
 			neighbour[s]       = (struct NeighNode *)malloc(sizeof(NeighNode));
 			neighbour[s]->id   = t;
@@ -87,7 +87,7 @@ void init() {
 			neighbourTail[s]       = p;
 		}
 
-		// ½¨·´Ïò±ß
+		// å»ºåå‘è¾¹
 		if (fromNode[t] == NULL) {
 			fromNode[t]       = (struct NeighNode*) malloc(sizeof(NeighNode));
 			fromNode[t]->id   = s;
@@ -154,7 +154,7 @@ void initAntiDist(int s) {
 }
 
 /**
- * ÒòÎªÂ·Íø×ª»¯³ÉÍ¼Ö®ºóÊÇÏ¡ÊèÍ¼£¬ÕâÀïÓÃSPFAËã·¨Çóµ¥Ô´µã×î¶ÌÂ·¾¶
+ * å› ä¸ºè·¯ç½‘è½¬åŒ–æˆå›¾ä¹‹åæ˜¯ç¨€ç–å›¾ï¼Œè¿™é‡Œç”¨SPFAç®—æ³•æ±‚å•æºç‚¹æœ€çŸ­è·¯å¾„
  */
 void SPFA(int s) {
 	initDist(s);
@@ -184,7 +184,7 @@ void SPFA(int s) {
         distTemp[s].push_back(minDist[j]);
 }
 
-// µ¥Ô´µã·´Ïò×î¶ÌÂ·¾¶
+// å•æºç‚¹åå‘æœ€çŸ­è·¯å¾„
 void antiSPFA(int s) {
 	initAntiDist(s);
 	q.push(s);
@@ -299,8 +299,8 @@ void testShare() {
 
 
 /*
- *Éú³ÉÍ¬ÆğµãÇé¿öÏÂµÄ²âÊÔÊı¾İ£¬Æğµã×ø±ê£º(31.1622,121.54)
- *Êı¾İ¸ñÊ½£ºÖÕµãId£¬ËùÄÜ½ÓÊÜµÄÊ¡Ç®ÏµÊı 
+ *ç”ŸæˆåŒèµ·ç‚¹æƒ…å†µä¸‹çš„æµ‹è¯•æ•°æ®ï¼Œèµ·ç‚¹åæ ‡ï¼š(31.1622,121.54)
+ *æ•°æ®æ ¼å¼ï¼šç»ˆç‚¹Idï¼Œæ‰€èƒ½æ¥å—çš„çœé’±ç³»æ•° 
  */
 void generateTestsForCase1(){
 	SPFA(31948);
@@ -331,8 +331,8 @@ void generateTestsForCase1(){
 }
 
 /*
- * Éú³ÉÍ¬ÖÕµãÇé¿öÏÂµÄ²âÊÔÊı¾İ£¬ÖÕµã×ø±ê£ºÆÖ¶«¹ú¼Ê»ú³¡ 
- * Êı¾İ¸ñÊ½£ºÆğµãId£¬×îÍí³ö·¢Ê±¼ä£¬ËùÄÜ½ÓÊÜµÄÊ¡Ç®ÏµÊı 
+ * ç”ŸæˆåŒç»ˆç‚¹æƒ…å†µä¸‹çš„æµ‹è¯•æ•°æ®ï¼Œç»ˆç‚¹åæ ‡ï¼šæµ¦ä¸œå›½é™…æœºåœº 
+ * æ•°æ®æ ¼å¼ï¼šèµ·ç‚¹Idï¼Œæœ€æ™šå‡ºå‘æ—¶é—´ï¼Œæ‰€èƒ½æ¥å—çš„çœé’±ç³»æ•° 
  */
 void generateTestsForCase2() {
 	antiSPFA(411445);
@@ -361,8 +361,8 @@ void generateTestsForCase2() {
 }
 
 /*
- * ÆğµãºÍÖÕµã¶¼²»ÏàÍ¬µÄÇé¿ö
- * Êı¾İ¸ñÊ½£ºÆğµãid£¬ÖÕµãid£¬×îÍí³ö·¢Ê±¼ä£¬Ê¡Ç®±ÈÀı 
+ * èµ·ç‚¹å’Œç»ˆç‚¹éƒ½ä¸ç›¸åŒçš„æƒ…å†µ
+ * æ•°æ®æ ¼å¼ï¼šèµ·ç‚¹idï¼Œç»ˆç‚¹idï¼Œæœ€æ™šå‡ºå‘æ—¶é—´ï¼Œçœé’±æ¯”ä¾‹ 
  */
 void generateTestsForCase3() {
 	ifstream fin("testcase.txt");
@@ -378,7 +378,7 @@ void generateTestsForCase3() {
 		int time  = rand() % 60;
 		float rat = rand() % 30 + 50; 
 		lastestTime[tot] = time;
-		ratio[tot++]    = rat / 100; 
+		ratio[tot++]     = rat / 100; 
 	}
 	fin.close();
 	
@@ -401,15 +401,15 @@ int main() {
 
 	time(&rawtime); 
 	timeinfo = localtime(&rawtime); 
-	printf ("ÏµÍ³Ê±¼äÊÇ: %s", asctime (timeinfo) ); 
+	printf ("ç³»ç»Ÿæ—¶é—´æ˜¯: %s", asctime (timeinfo) ); 
 	
 	generateTestsForCase1();
-    generateTestsForCase2();
+        generateTestsForCase2();
 	generateTestsForCase3();
 
 	time(&rawtime); 
 	timeinfo = localtime(&rawtime); 
-	printf ("ÏµÍ³Ê±¼äÊÇ: %s", asctime (timeinfo) );
+	printf ("ç³»ç»Ÿæ—¶é—´æ˜¯: %s", asctime (timeinfo) );
 	
 	//recycle();
 
