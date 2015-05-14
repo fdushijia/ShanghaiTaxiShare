@@ -16,7 +16,7 @@ using namespace std;
 
 
 #define MAX_DIST  1000000000  //初始最大距离
-#define MAX_PAIRS 200
+#define MAX_PAIRS 400
 
 float minDist[ALL_NODES], antiMinDist[ALL_NODES];
 bool  visit[ALL_NODES];
@@ -297,6 +297,102 @@ void testShare() {
 	
 } */
 
+
+/*
+ *生成同起点情况下的测试数据，起点坐标：(31.1622,121.54)
+ *数据格式：终点Id，所能接受的省钱系数 
+ */
+void generateTestsForCase1(){
+	SPFA(31948);
+	
+	srand((unsigned)time(0));
+	int positionId[MAX_PAIRS];
+	float ratio[MAX_PAIRS];
+	
+	ofstream fout("test1.txt");
+	for (int i = 0; i < MAX_PAIRS; i++) {
+		int s = rand() % ALL_NODES;
+		while (minDist[s] == MAX_DIST) {
+			s = rand() % ALL_NODES;
+		} 
+		int time  = rand() % 60;
+		float rat = rand() % 30 + 50; 
+		positionId[i] = s;
+		ratio[i]      = rat / 100; 
+	}
+	
+	for (int i = 0; i < MAX_PAIRS; i++) {
+		fout<<positionId[i]<<" "<<ratio[i]<<endl;
+	}
+	
+	fout.close();
+	
+	
+}
+
+/*
+ * 生成同终点情况下的测试数据，终点坐标：浦东国际机场 
+ * 数据格式：起点Id，最晚出发时间，所能接受的省钱系数 
+ */
+void generateTestsForCase2() {
+	antiSPFA(411445);
+	srand((unsigned)time(0));
+	int positionId[MAX_PAIRS], latestTime[MAX_PAIRS];
+	float ratio[MAX_PAIRS];
+	
+	ofstream fout("test2.txt");
+	for (int i = 0; i < MAX_PAIRS; i++) {
+		int s = rand() % ALL_NODES;
+		while (antiMinDist[s] == MAX_DIST) {
+			s = rand() % ALL_NODES;
+		} 
+		int time  = rand() % 60;
+		float rat = rand() % 30 + 50; 
+		positionId[i] = s;
+		latestTime[i] = time;
+		ratio[i]      = rat / 100; 
+	}
+	
+	for (int i = 0; i < MAX_PAIRS; i++) {
+		fout<<positionId[i]<<" "<<latestTime[i]<<" "<<ratio[i]<<endl;
+	}
+	
+	fout.close();
+}
+
+/*
+ * 起点和终点都不相同的情况
+ * 数据格式：起点id，终点id，最晚出发时间，省钱比例 
+ */
+void generateTestsForCase3() {
+	ifstream fin("testcase.txt");
+	int s, t;
+	int startId[2000], endId[2000], lastestTime[2000];
+	float ratio[2000];
+	int tot = 0;
+	srand((unsigned)time(0));
+	while (fin>>s>>t) 
+	{
+		startId[tot] = s;
+		endId[tot]   = t;
+		int time  = rand() % 60;
+		float rat = rand() % 30 + 50; 
+		lastestTime[tot] = time;
+		ratio[tot++]    = rat / 100; 
+	}
+	fin.close();
+	
+	ofstream fout("test3.txt");
+	for (int i = 0; i < tot; i++) {
+		fout<<startId[i]<<" "<<endId[i]<<" "<<lastestTime[i]<<" "<<ratio[i]<<endl;
+	}
+	fout.close();
+	
+	
+}
+
+
+
 int main() {
 	init();
 
@@ -307,15 +403,9 @@ int main() {
 	timeinfo = localtime(&rawtime); 
 	printf ("系统时间是: %s", asctime (timeinfo) ); 
 	
-	antiSPFA(31948);
-
-	ofstream fout("Pudong_Anti.txt");
-	for (int i = 0; i < ALL_NODES; i++) {
-		fout<<antiMinDist[i]<<" ";
-	}
-
-	fout<<endl;
-	fout.close();
+	generateTestsForCase1();
+    generateTestsForCase2();
+	generateTestsForCase3();
 
 	time(&rawtime); 
 	timeinfo = localtime(&rawtime); 
