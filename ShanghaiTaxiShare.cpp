@@ -15,16 +15,18 @@ using namespace std;
 #define ALL_NODES 435288      //图中Node的最大值
 
 
-#define MAX_DIST  1000000000  //初始最大距离
-#define MAX_PAIRS 400
-#define SPEED     40          // 车速 
+#define MAX_DIST   1000000000  //初始最大距离
+#define MAX_PAIRS  400
+#define TEST_PAIRS 200
+#define SPEED      40          // 车速 
+#define MAX_TIME   1000000000
 
-typedef float DistVector [435288];
 
 float minDist[ALL_NODES], antiMinDist[ALL_NODES];
 bool  visit[ALL_NODES];
 queue<int> q;
 vector<int> path[MAX_PAIRS];
+
 
 // 图中的节点 
 struct RoadNode {
@@ -37,10 +39,12 @@ struct RoadNode {
 
 // 请求的数据结构 
 struct QueryInfo {
-	int startTd, endId;
+	int startId, endId;
 	vector<float> distS, distT;
 	int latestTime;
-	int maxRatio;
+	float maxRatio;
+	int queryId;
+	time_t queryTime;
 };
 struct NeighNode {
 	int id;
@@ -403,31 +407,216 @@ void generateTestsForCase3() {
 }
 
 float getSaveRatio(float dist1, float dist2, float totDist) {
-	float saveAll = (dist1 + dist2 - totDist) * 0.8;
+	float saveAll = (dist1 + dist2 - totDist);
 	
-	return 1 - (0.8 * saveAll) / (dist1 + dist2);
+	return 1 - (0.95 * saveAll) / (dist1 + dist2);
 }
 
-float shareDistance(DistVector distS1, DistVector distT1, DistVector distS2, DistVector distT2, int s1, int t1, int s2, int t2, int lastTime1, int lastTime2) {
+float shareDistance(vector<float> distS1, vector<float> distT1, vector<float> distS2, vector<float> distT2, int s1, int t1, int s2, int t2, float lastTime1, float lastTime2) {
 	float ans = MAX_DIST;
 	//s1->s2->t1->t2
-	if (distS1[s2] + distS2[t1] + distT1[t2] < ans && distS1[s2] / SPEED < lastTime2) {
+	if (distS1[s2] + distS2[t1] + distT1[t2] < ans && distS1[s2] / SPEED * 3600 < lastTime2) {
 		ans = distS1[s2] + distS2[t1] + distT1[t2];
 	}
 	//s1->s2->t2->t1
-	if (distS1[s2] + distS2[t2] + distT2[t1] < ans && distS1[s2] / SPEED < lastTime2) {
+	if (distS1[s2] + distS2[t2] + distT2[t1] < ans && distS1[s2] / SPEED * 3600 < lastTime2) {
 		ans = distS1[s2] + distS2[t2] + distT2[t1];
 	}
 	//s2->s1->t1->t2
-	if (distS2[s1] + distS1[t1] + distT1[t2] < ans && distS2[s1] / SPEED < lastTime1) {
+	if (distS2[s1] + distS1[t1] + distT1[t2] < ans && distS2[s1] / SPEED * 3600 < lastTime1) {
 		ans = distS2[s1] + distS1[t1] + distT1[t2];
 	}
 	//s2->s1->t2->t1
-	if (distS2[s1] + distS1[t2] + distT2[t1] < ans && distS2[s1] / SPEED < lastTime1) {
+	if (distS2[s1] + distS1[t2] + distT2[t1] < ans && distS2[s1] / SPEED * 3600 < lastTime1) {
 		ans = distS2[s1] + distS1[t2] + distT2[t1];
 	}
 	
 	return ans;
+	
+}
+
+void testForCase1() {
+	list<QueryInfo> queries;
+	ifstream fin("test1.txt");
+	int pudongId = 31948;
+	
+	SPFA(pudongId);
+    vector<float> pudongDist;
+    
+    for (int i = 0; i < ALL_NODES; i++) {
+    	pudongDist.push_back(minDist[i]);
+    }
+	int endId;
+	float ratio;
+	
+	int ans[TEST_PAIRS];
+	int i = 0;
+	int latestTime;
+	
+	for (int j = 0; j < TEST_PAIRS; j++) ans[j] = -1;
+	time_t rawtime;
+	float allRatio = 0;
+	
+	while (fin>>endId>>latestTime>>ratio) {
+		cout<<endId<<" "<<ratio<<endl;
+		QueryInfo newQuery;
+		newQuery.endId      = endId;
+		newQuery.startId    = pudongId;
+		newQuery.maxRatio   = ratio;
+		newQuery.queryId    = i;
+		newQuery.latestTime = latestTime;
+		time(&rawtime);
+		newQuery.queryTime = rawtime; 
+		SPFA(endId);
+		for (int j = 0; j < ALL_NODES; j++) {
+			newQuery.distT.push_back(minDist[j]);
+		}
+		
+		
+		list<QueryInfo>::iterator itor = queries.begin();
+		bool flag = false;
+		while (itor != queries.end()) {
+			time(&rawtime);
+
+			if (rawtime - (*itor).queryTime <= (*itor).latestTime * 60) {					
+				float shareDist = shareDistance(pudongDist, (*itor).distT, pudongDist, newQuery.distT, pudongId, (*itor).endId, pudongId, newQuery.endId, MAX_TIME, MAX_TIME);
+				float dist1 = pudongDist[(*itor).endId];
+				float dist2 = pudongDist[endId];
+				float curRatio = getSaveRatio(dist1, dist2, shareDist);
+				if (curRatio < (*itor).maxRatio && curRatio < ratio) {
+					ans[(*itor).queryId] = i;
+					ans[i] = (*itor).queryId;
+					allRatio += curRatio * 2;
+				queries.erase(itor);
+				flag = true;
+				cout<<curRatio<<endl;
+				break;
+			} else {
+				itor ++;
+			}
+		} else {itor ++;}
+		
+			
+		}
+		if (!flag) {
+			queries.push_back(newQuery);
+		}
+		i ++;
+	}
+	fin.close();
+	
+	ofstream fout("ans1.txt");
+	int success = 0;
+	int waitNum = 0;
+	for (int i = 0; i < TEST_PAIRS; i++) {
+		if (ans[i] != -1) {
+			success ++;
+			if (i < ans[i]) {
+				waitNum += ans[i] - i;
+				fout<<ans[i] - i<<endl;
+			} else {
+				fout<<0<<endl;
+			}
+			
+		}
+	}
+	fout<<"成功请求数："<<success<<endl;
+	fout<<"平均Ratio: "<<allRatio / success<<endl;
+	fout<<"平均等待请求数："<<waitNum / success<<endl;
+	fout.close();
+}
+
+void testForCase2() {
+	list<QueryInfo> queries;
+	ifstream fin("test2.txt");
+//	int pudongId = 411445;
+	int pudongId = 31948;	
+	antiSPFA(pudongId);
+	SPFA(pudongId);
+    vector<float> pudongDist, antiPudongDist;
+    time_t rawtime;
+	int ans[TEST_PAIRS];
+	for (int i = 0; i < TEST_PAIRS; i++) ans[i] = -1;
+    
+    for (int i = 0; i < ALL_NODES; i++) {
+    	antiPudongDist.push_back(antiMinDist[i]);
+    }
+    for (int i = 0; i < ALL_NODES; i++) {
+    	pudongDist.push_back(minDist[i]);
+    }
+
+	int startId, latestTime;
+	float ratio, allRatio = 0;
+	
+	
+	int i = 0;
+	while (fin>>startId>>latestTime>>ratio) {
+		cout<<startId<<" "<<latestTime<<" "<<ratio<<endl;
+		//插入一个新的查询到队列中 
+		QueryInfo newQuery;
+		newQuery.startId    = startId;
+		newQuery.endId      = pudongId;
+		newQuery.maxRatio   = ratio;
+		newQuery.latestTime = latestTime;
+		newQuery.queryId    = i;
+		time(&rawtime);
+		newQuery.queryTime  = rawtime;
+		SPFA(startId);
+		for (int j = 0; j < ALL_NODES; j++) {
+			newQuery.distS.push_back(minDist[j]);
+		}
+		
+		
+		list<QueryInfo>::iterator itor = queries.begin();
+		bool flag = false;
+		while (itor != queries.end()) {
+			float dist1 = antiPudongDist[(*itor).startId];
+			float dist2 = antiPudongDist[startId];
+			
+			float remainTime1 = (*itor).latestTime * 60 - (rawtime - (*itor).queryTime);
+			float remainTime2 = latestTime * 60;
+			float shareDist = shareDistance((*itor).distS, pudongDist, newQuery.distS, pudongDist, (*itor).startId, pudongId, newQuery.startId, pudongId, remainTime1, remainTime2);
+
+			float curRatio = getSaveRatio(dist1, dist2, shareDist);
+			if (curRatio < (*itor).maxRatio && curRatio < ratio) {
+				flag = true;
+				ans[(*itor).queryId] = i;
+				ans[i] = (*itor).queryId;
+				cout<<curRatio<<endl;
+				allRatio += curRatio * 2;
+				queries.erase(itor);
+				break;
+			} else {
+				itor ++;
+			}
+			
+		}
+		if (!flag) {
+			queries.push_back(newQuery);
+		}
+		i++;
+	}
+	fin.close();
+	
+	ofstream fout("ans2.txt");
+	int success = 0;
+	int waitNum = 0;
+	for (int i = 0; i < TEST_PAIRS; i++) {
+		if (ans[i] != -1) {
+			success ++;
+			if (i < ans[i]) {
+				waitNum += ans[i] - i;
+				fout<<ans[i] - i<<endl;
+			} else {
+				fout<<0<<endl;
+			}
+			
+		}
+	}
+	fout<<"成功请求数："<<success<<endl;
+	fout<<"平均Ratio: "<<allRatio / success<<endl;
+	fout<<"平均等待请求数："<<waitNum / success<<endl;
+	fout.close();
 	
 }
 
@@ -444,9 +633,12 @@ int main() {
 	timeinfo = localtime(&rawtime); 
 	printf ("系统时间是: %s", asctime (timeinfo) ); 
 	
-	generateTestsForCase1();
-    generateTestsForCase2();
-	generateTestsForCase3();
+	//generateTestsForCase1();
+    //generateTestsForCase2();
+	//generateTestsForCase3();
+	
+	testForCase1();
+	testForCase2();
 
 	time(&rawtime); 
 	timeinfo = localtime(&rawtime); 
