@@ -497,6 +497,12 @@ void constructMapForQuery(vector<QueryInfo> queries, int n, int caseId) {
 					shareDist = shareDistance(query1.distS, pudongDist, query2.distS, pudongDist, query1.startId, pudongId, query2.startId, pudongId, remainTime1, remainTime2);
 					dist1 = antiPudongDist[query1.startId];
 					dist2 = antiPudongDist[query2.startId];
+				} else if (caseId == 3) {
+					float remainTime1 = query1.latestTime * 60;
+					float remainTime2 = query2.latestTime * 60;
+					shareDist = shareDistance(query1.distS, query1.distT, query2.distS, query2.distT, query1.startId, query1.endId, query2.startId, query2.endId, remainTime1, remainTime2);
+					dist1 = query1.distS[query1.endId];
+					dist2 = query2.distS[query2.endId];
 				}
 
 				float curRatio = getSaveRatio(dist1, dist2, shareDist);
@@ -848,8 +854,8 @@ void testForCase3() {
 	ifstream fin("test3.txt");
 
 	time_t rawtime;
-	int testPairs = 50;
-	int allPairs  = 250;
+	int testPairs = 100;
+	int allPairs  = 200;
 	int ans[250];
 	for (int i = 0; i < allPairs; i++) ans[i] = -1;
 
@@ -857,8 +863,8 @@ void testForCase3() {
 	float ratio, allRatio = 0;
 
 
-	int i = 0;
-	while (fin>>startId>>endId>>latestTime>>ratio) {
+	for (int i = 0; i < allPairs; i++) {
+		fin>>startId>>endId>>latestTime>>ratio;
 		cout<<startId<<" "<<endId<<" "<<latestTime<<" "<<ratio<<endl;
 		//插入一个新的查询到队列中 
 		QueryInfo newQuery = setQueryInfo(startId, endId, ratio, latestTime, i);
@@ -901,7 +907,6 @@ void testForCase3() {
 		if (!flag) {
 			queries.push_back(newQuery);
 		}
-		i++;
 	}
 	fin.close();
 
@@ -913,22 +918,107 @@ void testForCase3() {
 			success ++;
 			if (i < ans[i]) {
 				waitNum += ans[i] - i;
-				fout<<ans[i] - i<<endl;
+				fout<<i<<"<->"<<ans[i]<<" "<<ans[i] - i<<endl;
 			} else {
-				fout<<0<<endl;
+				fout<<i<<":"<<0<<endl;
 			}
 
 		}
 	}
-	fout<<"成功请求数："<<success<<endl;
+	fout<<"前"<<testPairs<<"个请求中成功请求数："<<success<<endl;
+	success = 0;
+	for (int i = testPairs; i < allPairs; i++)
+		if (ans[i] != -1) {
+			success ++;
+		}
+	fout<<"第"<<testPairs<<"到第"<<allPairs<<"个请求中成功请求数:"<<success<<endl;
 	fout<<"平均Ratio: "<<allRatio / success<<endl;
 	fout<<"平均等待请求数："<<waitNum / success<<endl;
 	fout.close();
 }
 
+void matchTest3() {
+
+	vector<QueryInfo> queries;
+	ifstream fin("test3.txt");
+	int pudongId = 31948;
+
+	for (int i = 0; i < MAX_PAIRS; i++) spouse[i] = -1;
+
+	SPFA(pudongId);
+	vector<float> pudongDist, antiPudongDist;
+
+	for (int i = 0; i < ALL_NODES; i++) {
+		pudongDist.push_back(minDist[i]);
+	}
+	
+	antiSPFA(pudongId);
+	for (int i = 0; i < ALL_NODES; i++) {
+		antiPudongDist.push_back(antiMinDist[i]);
+	}
+	int startId, endId;
+	float ratio;
+	int testPairs = 100;
+	int allPairs  = 200;
+
+	int ans[200];
+	int i = 0;
+
+	for (int j = 0; j < allPairs; j++) spouse[j] = -1;
+	time_t rawtime;
+	float allRatio = 0;
+	int latestTime;
+
+	for (int i = 0; i < allPairs; i++) {
+		fin>>startId>>endId>>latestTime>>ratio;
+		cout<<startId<<" "<<endId<<" "<<latestTime<<" "<<ratio<<endl;
+		QueryInfo newQuery;
+		newQuery = setQueryInfo(startId, endId, ratio, latestTime, i);
+		SPFA(startId);
+		for (int j = 0; j < ALL_NODES; j++) {
+			newQuery.distS.push_back(minDist[j]);
+		}
+		antiSPFA(endId);
+		for (int j = 0; j < ALL_NODES; j++) {
+			newQuery.distT.push_back(antiMinDist[j]);
+		}
+		queries.push_back(newQuery);
+	}
+
+	fin.close();
+
+	cout<<"Constructing the map..."<<endl;
+	int n = queries.size();
+	constructMapForQuery(queries, queries.size(), 3);
 
 
-void matchTest1_new() {
+	for (int i = 0; i < n; i++)
+		if (spouse[i] == -1) {
+			cout<<"findaugment:"<<i<<endl;
+			findaugment(i, n);
+		}
+
+	ofstream fout("ans33.txt");
+	int success = 0;
+	int waitNum = 0;
+	for (int i = 0; i < testPairs; i++) {
+		if (spouse[i] != -1) {
+			success ++;
+			fout<<i<<"<->"<<spouse[i]<<endl;
+		}
+	}
+	fout<<"前"<<testPairs<<"个请求中成功请求数："<<success<<endl;
+	success = 0;
+	for (int i = testPairs; i < allPairs; i++) {
+		if (spouse[i] != -1) success ++;
+	} 
+	fout<<"第"<<testPairs<<"到第"<<allPairs<<"个请求中成功请求数:"<<success<<endl;
+	fout.close();
+}
+
+
+
+/*void matchTest1_new() {
 	vector<QueryInfo> queries;
 	ifstream fin("test1.txt");
 	int pudongId = 31948;
@@ -997,7 +1087,7 @@ void matchTest1_new() {
 	fout<<"成功请求数："<<success<<endl;
 	fout.close();
 
-}
+}*/
 
 
 
@@ -1017,12 +1107,13 @@ int main() {
 	//generateTestsForCase3();
 
 	//testForCase1();
-	testForCase2();
+	//testForCase2();
 	//testForCase3();
 
 	//matchTest1();
-	matchTest2();
-
+	//matchTest2();
+	matchTest3();
+	
 	//matchTest1_new();
 
 	time(&rawtime); 
