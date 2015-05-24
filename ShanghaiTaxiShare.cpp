@@ -268,9 +268,9 @@ void generateTestsForCase1(){
 }
 
 /*
-* 生成同终点情况下的测试数据，终点坐标：浦东国际机场 
-* 数据格式：起点Id，最晚出发时间，所能接受的省钱系数 
-*/
+ * 生成同终点情况下的测试数据，终点坐标：浦东国际机场 
+ * 数据格式：起点Id，最晚出发时间，所能接受的省钱系数 
+ */
 void generateTestsForCase2() {
 	antiSPFA(411445);
 	srand((unsigned)time(0));
@@ -297,42 +297,78 @@ void generateTestsForCase2() {
 	fout.close();
 }
 
+bool isUsefulNode(int num) {
+	int businessCenter[7] = {23913, 23914, 28997, 25158, 145698, 196221, 25166};
+	
+	for (int i = 0; i < 2; i++) {
+        int t = i * 2;
+		float distance = Distance::getDist(roadNodes[num].lat, roadNodes[num].lon, roadNodes[businessCenter[t]].lat, roadNodes[businessCenter[t]].lon);
+		if (distance < 1) return true;
+	}
+	
+	return false;
+}
+
 /*
 * 起点和终点都不相同的情况
 * 数据格式：起点id，终点id，最晚出发时间，省钱比例 
 */
 void generateTestsForCase3() {
-	ifstream fin("testcase.txt");
+	//ifstream fin("testcase.txt");
+	int cnt = 0;
+    ofstream fout("test_temp.txt");
+	for (int i = 0; i < ALL_NODES; i++) {
+		if (isUsefulNode(i)) {
+			fout<<i<<endl;
+			cnt ++;
+		}
+	}
+	fout.close();
 	int s, t;
 	int startId[2000], endId[2000], lastestTime[2000];
 	float ratio[2000];
 	int tot = 0;
+	
+	int nodeNums = cnt;
+	int ids[21603];
+	
+	ifstream fin("test_temp.txt");
+	for (int i = 0; i < nodeNums; i++) {
+		fin>>ids[i];
+	}
+	fin.close();
+	
 	srand((unsigned)time(0));
-	for (int i = 0; i < 399; i++)
+	for (int i = 0; i < 200; i++)
 	{
-		fin>>s>>t;
-		startId[i] = s;
-		endId[i]   = t;
+		while (true) {
+			int num1 = rand() % nodeNums;
+			int num2 = rand() % nodeNums;
+			SPFA(ids[num1]);
+			if (minDist[ids[num2]] != MAX_DIST) {
+				startId[i] = ids[num1];
+				endId[i]   = ids[num2];
+				break;
+			}
+		}
+		cout<<startId[i]<<" "<<endId[i]<<endl;
 		int time  = rand() % 60;
 		float rat = rand() % 40 + 50; 
 		lastestTime[i] = time;
 		ratio[i]     = rat / 100; 
 	}
-	fin.close();
 
-	ofstream fout("test3.txt");
-	for (int i = 0; i < 399; i++) {
-		fout<<startId[i]<<" "<<endId[i]<<" "<<lastestTime[i]<<" "<<ratio[i]<<endl;
+	ofstream testOut("test3.txt");
+	for (int i = 0; i < 200; i++) {
+		testOut<<startId[i]<<" "<<endId[i]<<" "<<lastestTime[i]<<" "<<ratio[i]<<endl;
 	}
-	fout.close();
-
-
+	testOut.close();
 }
 
 float getSaveRatio(float dist1, float dist2, float totDist) {
 	float saveAll = (dist1 + dist2 - totDist);
 
-	return 1 - (0.95 * saveAll) / (dist1 + dist2);
+	return 1 - (1 * saveAll) / (dist1 + dist2);
 }
 
 float shareDistance(vector<float> distS1, vector<float> distT1, vector<float> distS2, vector<float> distT2, int s1, int t1, int s2, int t2, float lastTime1, float lastTime2) {
@@ -1108,13 +1144,13 @@ int main() {
 
 	//testForCase1();
 	//testForCase2();
-	//testForCase3();
+	testForCase3();
 
 	//matchTest1();
 	//matchTest2();
-	matchTest3();
+//	matchTest3();
 	
-	//matchTest1_new();
+//	matchTest1_new();
 
 	time(&rawtime); 
 	timeinfo = localtime(&rawtime); 
