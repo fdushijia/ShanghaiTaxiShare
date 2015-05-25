@@ -54,6 +54,7 @@ struct QueryInfo {
 	float maxRatio;
 	int queryId;
 	time_t queryTime;
+	vector<float> distSS, distST, distTS, distTT;
 };
 struct NeighNode {
 	int id;
@@ -353,7 +354,7 @@ void generateTestsForCase3() {
 		}
 		cout<<startId[i]<<" "<<endId[i]<<endl;
 		int time  = rand() % 60;
-		float rat = rand() % 40 + 50; 
+		float rat = rand() % 50 + 50; 
 		lastestTime[i] = time;
 		ratio[i]     = rat / 100; 
 	}
@@ -371,7 +372,33 @@ float getSaveRatio(float dist1, float dist2, float totDist) {
 	return 1 - (1 * saveAll) / (dist1 + dist2);
 }
 
-float shareDistance(vector<float> distS1, vector<float> distT1, vector<float> distS2, vector<float> distT2, int s1, int t1, int s2, int t2, float lastTime1, float lastTime2) {
+float shareDistance(vector<float> dist1SS, vector<float> dist1ST, vector<float> dist1TS, vector<float> dist1TT, 
+      vector<float> dist2SS, vector<float> dist2ST, vector<float> dist2TS, vector<float> dist2TT,
+      int num1, int num2, float lastTime1, float lastTime2) {
+	float ans = MAX_DIST;
+	//s1->s2->t1->t2
+	if (dist1SS[num2] + dist2ST[num1] + dist1TT[num2] < ans && dist1SS[num2] / SPEED * 3600 < lastTime2) {        
+		ans = dist1SS[num2] + dist2ST[num1] + dist1TT[num2];
+	}
+	//s1->s2->t2->t1
+	if (dist1SS[num2] + dist2ST[num2] + dist2TT[num1] < ans && dist1SS[num2] / SPEED * 3600 < lastTime2) {     
+		ans = dist1SS[num2] + dist2ST[num2] + dist2TT[num1];
+	}
+	//s2->s1->t1->t2
+	if (dist2SS[num1] + dist1ST[num1] + dist1TT[num2] < ans && dist2SS[num1] / SPEED * 3600 < lastTime1) {
+		ans = dist2SS[num1] + dist1ST[num1] + dist1TT[num2];
+	}
+	//s2->s1->t2->t1
+	if (dist2SS[num1] + dist1ST[num2] + dist2TT[num1] < ans && dist2SS[num1] / SPEED * 3600 < lastTime1) {
+        
+		ans = dist2SS[num1] + dist1ST[num2] + dist2TT[num1];
+	}
+    cout<<endl;
+	return ans;
+
+}
+
+float shareDistanceFull(vector<float> distS1, vector<float> distT1, vector<float> distS2, vector<float> distT2, int s1, int t1, int s2, int t2, float lastTime1, float lastTime2) {
 	float ans = MAX_DIST;
 	//s1->s2->t1->t2
 	if (distS1[s2] + distS2[t1] + distT1[t2] < ans && distS1[s2] / SPEED * 3600 < lastTime2) {
@@ -523,22 +550,28 @@ void constructMapForQuery(vector<QueryInfo> queries, int n, int caseId) {
 				query2 = queries[j];
 				float shareDist, dist1, dist2;
 				if (caseId == 1) {
-					shareDist = shareDistance(pudongDist, query1.distT, pudongDist, query2.distT, pudongId, query1.endId, pudongId, query2.endId, MAX_TIME, MAX_TIME);
+					shareDist = shareDistance(query1.distSS, query1.distST, query1.distTS, query1.distTT,
+                              query2.distSS, query2.distST, query2.distTS, query2.distTT,
+                              i, j, MAX_TIME, MAX_TIME);
 					dist1 = pudongDist[query1.endId];
 					dist2 = pudongDist[query2.endId];
 
 				} else if (caseId == 2) {
 					float remainTime1 = query1.latestTime * 60;
 					float remainTime2 = query2.latestTime * 60;
-					shareDist = shareDistance(query1.distS, pudongDist, query2.distS, pudongDist, query1.startId, pudongId, query2.startId, pudongId, remainTime1, remainTime2);
+				    shareDist = shareDistance(query1.distSS, query1.distST, query1.distTS, query1.distTT,
+                              query2.distSS, query2.distST, query2.distTS, query2.distTT,
+                              i, j, remainTime1, remainTime2);
 					dist1 = antiPudongDist[query1.startId];
 					dist2 = antiPudongDist[query2.startId];
 				} else if (caseId == 3) {
 					float remainTime1 = query1.latestTime * 60;
 					float remainTime2 = query2.latestTime * 60;
-					shareDist = shareDistance(query1.distS, query1.distT, query2.distS, query2.distT, query1.startId, query1.endId, query2.startId, query2.endId, remainTime1, remainTime2);
-					dist1 = query1.distS[query1.endId];
-					dist2 = query2.distS[query2.endId];
+	                shareDist = shareDistance(query1.distSS, query1.distST, query1.distTS, query1.distTT,
+                              query2.distSS, query2.distST, query2.distTS, query2.distTT,
+                              i, j, remainTime1, remainTime2);
+					dist1 = query1.distST[i];
+					dist2 = query2.distST[j];
 				}
 
 				float curRatio = getSaveRatio(dist1, dist2, shareDist);
@@ -591,7 +624,7 @@ void testForCase1() {
 		while (itor != queries.end()) {
 			time(&rawtime);
 			if (true) {					
-				float shareDist = shareDistance(pudongDist, (*itor).distT, pudongDist, newQuery.distT, pudongId, (*itor).endId, pudongId, newQuery.endId, MAX_TIME, MAX_TIME);
+				float shareDist = shareDistanceFull(pudongDist, (*itor).distT, pudongDist, newQuery.distT, pudongId, (*itor).endId, pudongId, newQuery.endId, MAX_TIME, MAX_TIME);
 				float dist1 = pudongDist[(*itor).endId];
 				float dist2 = pudongDist[endId];
 				float curRatio = getSaveRatio(dist1, dist2, shareDist);
@@ -648,6 +681,9 @@ void matchTest1() {
 	ifstream fin("test1.txt");
 	int pudongId = 31948;
 
+	int startIds[400], endIds[400], latestTimes[400];
+	float ratios[400];
+
 	for (int i = 0; i < MAX_PAIRS; i++) spouse[i] = -1;
 
 	SPFA(pudongId);
@@ -671,15 +707,29 @@ void matchTest1() {
 
 	for (int i = 0; i < allPairs; i++) {
 		fin>>endId>>ratio;
-		cout<<endId<<" "<<ratio<<endl;
+		endIds[i] = endId;
+		startIds[i] = pudongId;
+		ratios[i] = ratio;
+		latestTimes[i] = 60;
+	}
+	
+	for (int i = 0; i < allPairs; i++) {
+		cout<<endIds[i]<<" "<<ratios[i]<<endl;
 		QueryInfo newQuery;
-		newQuery = setQueryInfo(pudongId, endId, ratio, latestTime, i);
-		SPFA(endId);
-		for (int j = 0; j < ALL_NODES; j++) {
-			newQuery.distT.push_back(minDist[j]);
-		}
+		newQuery = setQueryInfo(startIds[i], endIds[i], ratios[i], latestTimes[i], i);
+		
+		for (int j = 0; j < allPairs; j++) {
+			newQuery.distSS.push_back(pudongDist[startIds[j]]);
+			newQuery.distST.push_back(pudongDist[endIds[j]]);
+        }
+		SPFA(endIds[i]);
+        for (int j = 0; j < allPairs; j++) {
+			newQuery.distTS.push_back(minDist[startIds[j]]);
+			newQuery.distTT.push_back(minDist[endIds[j]]);
+        }
 		queries.push_back(newQuery);
 	}
+
 
 	fin.close();
 
@@ -721,8 +771,8 @@ void testForCase2() {
 	SPFA(pudongId);
 	vector<float> pudongDist, antiPudongDist;
 	time_t rawtime;
-	int testPairs = 100;
-	int allPairs  = 200;
+	int testPairs = 25;
+	int allPairs  = 50;
 	int ans[200];
 	for (int i = 0; i < allPairs; i++) ans[i] = -1;
 
@@ -757,7 +807,7 @@ void testForCase2() {
 
 			float remainTime1 = (*itor).latestTime * 60 - (rawtime - (*itor).queryTime);
 			float remainTime2 = latestTime * 60;
-			float shareDist = shareDistance((*itor).distS, pudongDist, newQuery.distS, pudongDist, (*itor).startId, pudongId, newQuery.startId, pudongId, remainTime1, remainTime2);
+			float shareDist = shareDistanceFull((*itor).distS, pudongDist, newQuery.distS, pudongDist, (*itor).startId, pudongId, newQuery.startId, pudongId, remainTime1, remainTime2);
 
 			float curRatio = getSaveRatio(dist1, dist2, shareDist);
 			if (curRatio < (*itor).maxRatio && curRatio < ratio) {
@@ -816,6 +866,9 @@ void matchTest2() {
 	ifstream fin("test2.txt");
 	int pudongId = 31948;
 
+	int startIds[400], endIds[400], latestTimes[400];
+	float ratios[400];
+
 	for (int i = 0; i < MAX_PAIRS; i++) spouse[i] = -1;
 
 	SPFA(pudongId);
@@ -831,8 +884,8 @@ void matchTest2() {
 	}
 	int startId;
 	float ratio;
-	int testPairs = 100;
-	int allPairs  = 200;
+	int testPairs = 25;
+	int allPairs  = 50;
 
 	int ans[200];
 	int i = 0;
@@ -844,13 +897,26 @@ void matchTest2() {
 
 	for (int i = 0; i < allPairs; i++) {
 		fin>>startId>>latestTime>>ratio;
-		cout<<startId<<" "<<latestTime<<" "<<ratio<<endl;
+		startIds[i] = startId;
+		endIds[i]   = pudongId;
+		latestTimes[i] = latestTime;
+		ratios[i] = ratio;
+	}
+
+	for (int i = 0; i < allPairs; i++) {
+		cout<<startIds[i]<<" "<<latestTimes[i]<<" "<<ratios[i]<<endl;
 		QueryInfo newQuery;
-		newQuery = setQueryInfo(startId, pudongId, ratio, latestTime, i);
-		SPFA(startId);
-		for (int j = 0; j < ALL_NODES; j++) {
-			newQuery.distS.push_back(minDist[j]);
-		}
+		newQuery = setQueryInfo(startIds[i], pudongId, ratios[i], latestTimes[i], i);
+		SPFA(startIds[i]);
+		for (int j = 0; j < allPairs; j++) {
+            newQuery.distSS.push_back(minDist[startIds[j]]);
+            newQuery.distST.push_back(minDist[endIds[j]]);
+        }
+        for (int j = 0; j < allPairs; j++) {
+			newQuery.distTS.push_back(antiPudongDist[startIds[j]]);
+			newQuery.distTT.push_back(antiPudongDist[endIds[j]]);
+        }
+
 		queries.push_back(newQuery);
 	}
 
@@ -892,7 +958,7 @@ void testForCase3() {
 	time_t rawtime;
 	int testPairs = 100;
 	int allPairs  = 200;
-	int ans[250];
+	int ans[400];
 	for (int i = 0; i < allPairs; i++) ans[i] = -1;
 
 	int startId, endId, latestTime;
@@ -923,7 +989,7 @@ void testForCase3() {
 			float dist2 = newQuery.distS[endId];
 			float remainTime1 = selQuery.latestTime * 60 - (rawtime - selQuery.queryTime);
 			float remainTime2 = latestTime * 60;
-			float shareDist = shareDistance(selQuery.distS, selQuery.distT, newQuery.distS, newQuery.distT, selQuery.startId, selQuery.endId, newQuery.startId, newQuery.endId, remainTime1, remainTime2);
+			float shareDist = shareDistanceFull(selQuery.distS, selQuery.distT, newQuery.distS, newQuery.distT, selQuery.startId, selQuery.endId, newQuery.startId, newQuery.endId, remainTime1, remainTime2);
 
 			float curRatio = getSaveRatio(dist1, dist2, shareDist);
 			if (curRatio < selQuery.maxRatio && curRatio < ratio) {
@@ -997,27 +1063,39 @@ void matchTest3() {
 	int testPairs = 100;
 	int allPairs  = 200;
 
-	int ans[200];
+	int ans[400];
 	int i = 0;
 
 	for (int j = 0; j < allPairs; j++) spouse[j] = -1;
 	time_t rawtime;
 	float allRatio = 0;
 	int latestTime;
+	int startIds[400], endIds[400], latestTimes[400];
+	float ratios[400];
 
 	for (int i = 0; i < allPairs; i++) {
 		fin>>startId>>endId>>latestTime>>ratio;
-		cout<<startId<<" "<<endId<<" "<<latestTime<<" "<<ratio<<endl;
+		startIds[i] = startId;
+		endIds[i]   = endId;
+		ratios[i]   = ratio;
+		latestTimes[i] = latestTime;
+    }
+    for (int i = 0; i < allPairs; i++) {
+        cout<<startIds[i]<<" "<<endIds[i]<<" "<<latestTimes[i]<<" "<<ratios[i]<<endl;
 		QueryInfo newQuery;
-		newQuery = setQueryInfo(startId, endId, ratio, latestTime, i);
-		SPFA(startId);
-		for (int j = 0; j < ALL_NODES; j++) {
-			newQuery.distS.push_back(minDist[j]);
-		}
-		antiSPFA(endId);
-		for (int j = 0; j < ALL_NODES; j++) {
-			newQuery.distT.push_back(antiMinDist[j]);
-		}
+		newQuery = setQueryInfo(startIds[i], endIds[i], ratios[i], latestTimes[i], i);
+		SPFA(startIds[i]);
+		for (int j = 0; j < allPairs; j++) {
+            newQuery.distSS.push_back(minDist[startIds[j]]);
+            newQuery.distST.push_back(minDist[endIds[j]]);
+        }
+        SPFA(endIds[i]);
+        for (int j = 0; j < allPairs; j++) {
+            newQuery.distTS.push_back(minDist[startIds[j]]);
+            newQuery.distTT.push_back(minDist[endIds[j]]);
+        }
+        
+        
 		queries.push_back(newQuery);
 	}
 
@@ -1025,7 +1103,7 @@ void matchTest3() {
 
 	cout<<"Constructing the map..."<<endl;
 	int n = queries.size();
-	constructMapForQuery(queries, queries.size(), 3);
+	constructMapForQuery(queries, n, 3);
 
 
 	for (int i = 0; i < n; i++)
@@ -1148,7 +1226,7 @@ int main() {
 
 	//matchTest1();
 	//matchTest2();
-//	matchTest3();
+	//matchTest3();
 	
 //	matchTest1_new();
 
