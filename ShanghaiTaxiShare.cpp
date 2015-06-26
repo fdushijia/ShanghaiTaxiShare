@@ -16,7 +16,7 @@ using namespace std;
 
 
 #define MAX_DIST   1000000000  //初始最大距离
-#define MAX_PAIRS  400
+#define MAX_PAIRS  600
 #define TEST_PAIRS 200
 #define SPEED      40          // 车速 
 #define MAX_TIME   1000000000
@@ -359,7 +359,7 @@ void generateTestsForCase3() {
 		ratio[i]     = rat / 100; 
 	}
 
-	ofstream testOut("test3.txt");
+	ofstream testOut("test3_more.txt");
 	for (int i = 0; i < 200; i++) {
 		testOut<<startId[i]<<" "<<endId[i]<<" "<<lastestTime[i]<<" "<<ratio[i]<<endl;
 	}
@@ -961,14 +961,18 @@ void testForCase3() {
 	int ans[400];
 	for (int i = 0; i < allPairs; i++) ans[i] = -1;
 
-	int startId, endId, latestTime;
-	float ratio, allRatio = 0;
+	int startId, startIds[400], endId, endIds[400], latestTime, latestTimes[400];
+	float ratio, allRatio = 0, ratios[400];
 
 
 	for (int i = 0; i < allPairs; i++) {
 		fin>>startId>>endId>>latestTime>>ratio;
+		startIds[i] = startId;
+		endIds[i]   = endId;
+		latestTimes[i] = latestTime;
+		ratios[i]      = ratio;
 		cout<<startId<<" "<<endId<<" "<<latestTime<<" "<<ratio<<endl;
-		//插入一个新的查询到队列中 
+		//插入一个新查询到队列中 
 		QueryInfo newQuery = setQueryInfo(startId, endId, ratio, latestTime, i);
 		SPFA(startId);
 		for (int j = 0; j < ALL_NODES; j++) {
@@ -1037,6 +1041,13 @@ void testForCase3() {
 	fout<<"平均Ratio: "<<allRatio / success<<endl;
 	fout<<"平均等待请求数："<<waitNum / success<<endl;
 	fout.close();
+
+	ofstream failOut("fail_query.txt");
+	for (int i = 0; i < testPairs; i++) {
+		if (ans[i] == -1) {
+			failOut<<startIds[i]<<" "<<endIds[i]<<" "<<latestTimes[i]<<" "<<ratios[i]<<endl;
+		}
+	}
 }
 
 void matchTest3() {
@@ -1063,15 +1074,15 @@ void matchTest3() {
 	int testPairs = 100;
 	int allPairs  = 200;
 
-	int ans[400];
+	int ans[600];
 	int i = 0;
 
 	for (int j = 0; j < allPairs; j++) spouse[j] = -1;
 	time_t rawtime;
 	float allRatio = 0;
 	int latestTime;
-	int startIds[400], endIds[400], latestTimes[400];
-	float ratios[400];
+	int startIds[600], endIds[600], latestTimes[600];
+	float ratios[600];
 
 	for (int i = 0; i < allPairs; i++) {
 		fin>>startId>>endId>>latestTime>>ratio;
@@ -1128,83 +1139,15 @@ void matchTest3() {
 	} 
 	fout<<"第"<<testPairs<<"到第"<<allPairs<<"个请求中成功请求数:"<<success<<endl;
 	fout.close();
+
+    ofstream failOut("fail_queries.txt");
+    for (int i = 0; i < allPairs; i++) {
+        if (spouse[i] == -1) {
+            failOut<<startIds[i]<<" "<<endIds[i]<<" "<<latestTimes[i]<<" "<<ratios[i]<<endl;
+        }
+    }
+    failOut.close();
 }
-
-
-
-/*void matchTest1_new() {
-	vector<QueryInfo> queries;
-	ifstream fin("test1.txt");
-	int pudongId = 31948;
-
-	SPFA(pudongId);
-	vector<float> pudongDist;
-
-	for (int i = 0; i < ALL_NODES; i++) {
-		pudongDist.push_back(minDist[i]);
-	}
-	int endId;
-	float ratio;
-	int testPairs = 50;
-	int allPairs  = 100;
-
-	int ans[200];
-	int i = 0;
-	int latestTime = 0;
-
-	for (int j = 0; j < allPairs; j++) spouse[j] = -1;
-	time_t rawtime;
-	float allRatio = 0;
-
-	for (int i = 0; i < allPairs; i++) {
-		fin>>endId>>ratio;
-		cout<<endId<<" "<<ratio<<endl;
-		QueryInfo newQuery;
-		newQuery = setQueryInfo(pudongId, endId, ratio, latestTime, i);
-		SPFA(endId);
-		for (int j = 0; j < ALL_NODES; j++) {
-			newQuery.distT.push_back(minDist[j]);
-		}
-		queries.push_back(newQuery);
-	}
-
-	fin.close();
-
-	cout<<"Constructing the map..."<<endl;
-	int n = testPairs;
-	constructMapForQuery(queries, testPairs, 1);
-
-
-	for (int i = 0;i < n;i ++)
-		if (spouse[i] == -1) {
-			cout<<"findaugment:"<<i<<endl;
-			findaugment(i, n);
-		}
-
-	constructMapForQuery(queries, allPairs, 1);
-
-	for (int i = 0; i < allPairs; i++) {
-		if (spouse[i] == -1) {
-			findaugment(i, allPairs);
-		}
-	}
-
-	ofstream fout("ans11.txt");
-	int success = 0;
-	int waitNum = 0;
-	for (int i = 0; i < testPairs; i++) {
-		if (spouse[i] != -1) {
-			success ++;
-			fout<<i<<"<->"<<spouse[i]<<endl;
-		}
-	}
-	fout<<"成功请求数："<<success<<endl;
-	fout.close();
-
-}*/
-
-
-
 
 int main() {
 	init();
@@ -1222,13 +1165,13 @@ int main() {
 
 	//testForCase1();
 	//testForCase2();
-	testForCase3();
+    //testForCase3();
 
 	//matchTest1();
 	//matchTest2();
-	//matchTest3();
+	matchTest3();
 	
-//	matchTest1_new();
+    //matchTest1_new();
 
 	time(&rawtime); 
 	timeinfo = localtime(&rawtime); 
